@@ -114,35 +114,24 @@ def preprocess_prediciton():
        'day', 'hour', 'minute']]
     
     
-    from scipy.signal import argrelextrema
-
     n = 3
-    
+    m = 5
+    j =15
+    from scipy.signal import argrelextrema
     df['min'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=n)[0]]['Close']
     df['max'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=n)[0]]['Close']
-    
-    m = 6
-    
+
     df['mmin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=m)[0]]['Close']
     df['mmax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=m)[0]]['Close']
-    
-    j = 12
-    
+
     df['jmin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=j)[0]]['Close']
     df['jmax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=j)[0]]['Close']
-    
-    o = 18
-    
-    df['omin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
-                        order=o)[0]]['Close']
-    df['omax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
-                        order=o)[0]]['Close']
     
     df['min'].loc[~df['min'].isnull()] = 1  # not nan
     df['min'].loc[df['min'].isnull()] = 0  # nan
@@ -159,13 +148,11 @@ def preprocess_prediciton():
     df['jmax'].loc[~df['jmax'].isnull()] = 1  # not nan
     df['jmax'].loc[df['jmax'].isnull()] = 0  # nan
 
-    df['omin'].loc[~df['omin'].isnull()] = 1  # not nan
-    df['omin'].loc[df['omin'].isnull()] = 0  # nan
-    df['omax'].loc[~df['omax'].isnull()] = 1  # not nan
-    df['omax'].loc[df['omax'].isnull()] = 0  # nan
-
     one_hot_data=np.array(df[['min','max']].values.tolist())
     df['label_snr']=np.argmax(one_hot_data, axis=1)
+
+    # one_hot_data=np.array(df[['PUmin','PUmax']].values.tolist())
+    # df['PUlabel_snr']=np.argmax(one_hot_data, axis=1)
 
     one_hot_data=np.array(df[['mmin','mmax']].values.tolist())
     df['m_snr']=np.argmax(one_hot_data, axis=1)
@@ -173,12 +160,10 @@ def preprocess_prediciton():
     one_hot_data=np.array(df[['jmin','jmax']].values.tolist())
     df['j_snr']=np.argmax(one_hot_data, axis=1)
 
-    # one_hot_data=np.array(df[['omin','omax']].values.tolist())
-    # df['o_snr']=np.argmax(one_hot_data, axis=1)
-
     df['fut1'] = df["Close"].shift(3)
     df["imbalance"]=(df["Close"]-df["fut1"])*10000
-    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
+    # df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
+    df = df.drop("fut1", axis=1) 
 
     df = df.loc[~df.index.duplicated(keep = 'first')]
 
@@ -284,7 +269,7 @@ FUTURE_PERIOD_PREDICT = 2  # how far into the future are we trying to predict , 
 
 
 
-# model = tf.keras.models.load_model('models/LSTM-best.model')
+# model = tf.keras.models.load_model('models/LSTM-best5withdate.model')
 NAME = train_data() + '.model'
 model = tf.keras.models.load_model(f'models/{NAME}')
 
@@ -299,6 +284,7 @@ while(1):
     if i >= 10 and i % 2 == 0:
         NAME = train_data() + '.model'
         model = tf.keras.models.load_model(f'models/{NAME}')
+        # model = tf.keras.models.load_model('models/LSTM-best5withdate.model')
         i = 0
         
     if datetime.datetime.now().second < 30 and i % 2 == 0: #GARANTE QUE ELE VAI APOSTAR NA SEGUNDA, POIS AQUI ELE JÁ PEGA OS DADOS DE UMA NA FRENTE,

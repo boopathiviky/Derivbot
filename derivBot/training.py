@@ -24,7 +24,7 @@ except Exception as e:
   # Memory growth must be set before GPUs have been initialized
   print(e)
 
-SEQ_LEN = 8 # how long
+SEQ_LEN = 5 # how long
 FUTURE_PERIOD_PREDICT = 2  # how far into the future are we trying to predict
 
 def classify(current,future):
@@ -149,36 +149,24 @@ def train_data():
     indexes = df.index
     df=df[['Open', 'High', 'Low', 'Close','Body', 'Pullback', 'Candle_Ratio','year', 'month',
        'day', 'hour', 'minute']]
-
-    from scipy.signal import argrelextrema
-
     n = 3
-    
+    m = 5
+    j =15
+    from scipy.signal import argrelextrema
     df['min'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=n)[0]]['Close']
     df['max'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=n)[0]]['Close']
-    
-    m = 6
-    
+
     df['mmin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=m)[0]]['Close']
     df['mmax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=m)[0]]['Close']
-    
-    j = 12
-    
+
     df['jmin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
                         order=j)[0]]['Close']
     df['jmax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
                         order=j)[0]]['Close']
-    
-    o = 18
-    
-    df['omin'] = df.iloc[argrelextrema(df.Close.values, np.less_equal,
-                        order=o)[0]]['Close']
-    df['omax'] = df.iloc[argrelextrema(df.Close.values, np.greater_equal,
-                        order=o)[0]]['Close']
     
     df['min'].loc[~df['min'].isnull()] = 1  # not nan
     df['min'].loc[df['min'].isnull()] = 0  # nan
@@ -195,13 +183,11 @@ def train_data():
     df['jmax'].loc[~df['jmax'].isnull()] = 1  # not nan
     df['jmax'].loc[df['jmax'].isnull()] = 0  # nan
 
-    df['omin'].loc[~df['omin'].isnull()] = 1  # not nan
-    df['omin'].loc[df['omin'].isnull()] = 0  # nan
-    df['omax'].loc[~df['omax'].isnull()] = 1  # not nan
-    df['omax'].loc[df['omax'].isnull()] = 0  # nan
-
     one_hot_data=np.array(df[['min','max']].values.tolist())
     df['label_snr']=np.argmax(one_hot_data, axis=1)
+
+    # one_hot_data=np.array(df[['PUmin','PUmax']].values.tolist())
+    # df['PUlabel_snr']=np.argmax(one_hot_data, axis=1)
 
     one_hot_data=np.array(df[['mmin','mmax']].values.tolist())
     df['m_snr']=np.argmax(one_hot_data, axis=1)
@@ -209,13 +195,11 @@ def train_data():
     one_hot_data=np.array(df[['jmin','jmax']].values.tolist())
     df['j_snr']=np.argmax(one_hot_data, axis=1)
 
-    # one_hot_data=np.array(df[['omin','omax']].values.tolist())
-    # df['o_snr']=np.argmax(one_hot_data, axis=1)
-    df['future'] = df["Close"].shift(-FUTURE_PERIOD_PREDICT)
     df['fut1'] = df["Close"].shift(3)
     df["imbalance"]=(df["Close"]-df["fut1"])*10000
-    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
-
+    # df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
+    df = df.drop("fut1", axis=1) 
+    
     FUTURE_PERIOD_PREDICT = 2
     SEQ_LEN = 5
 
