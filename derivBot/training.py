@@ -92,6 +92,11 @@ def train_data():
     #actives = ['EURUSD','GBPUSD','EURJPY','AUDUSD']
     
     df = get_data_needed()
+    df['year'] = pd.DatetimeIndex(df['Date']).year
+    df['month'] = pd.DatetimeIndex(df['Date']).month
+    df['day'] = pd.DatetimeIndex(df['Date']).day
+    df['hour'] = pd.DatetimeIndex(df['Date']).hour
+    df['minute'] = pd.DatetimeIndex(df['Date']).minute
     # df.columns=['Open','Close','Low','High', 'volume','close_AUDUSD', 'volume_AUDUSD']
     def bionic_pullback(row):
         '''
@@ -142,7 +147,8 @@ def train_data():
     df=finding_candles_patterns(df)
     df[["Body","Pullback","Candle_Ratio"]] = df.apply(lambda x: bionic_pullback(x), axis=1, result_type="expand")
     indexes = df.index
-    df=df[['Open', 'High', 'Low', 'Close','Body', 'Pullback', 'Candle_Ratio']]
+    df=df[['Open', 'High', 'Low', 'Close','Body', 'Pullback', 'Candle_Ratio','year', 'month',
+       'day', 'hour', 'minute']]
 
     from scipy.signal import argrelextrema
 
@@ -203,13 +209,15 @@ def train_data():
     one_hot_data=np.array(df[['jmin','jmax']].values.tolist())
     df['j_snr']=np.argmax(one_hot_data, axis=1)
 
-    one_hot_data=np.array(df[['omin','omax']].values.tolist())
-    df['o_snr']=np.argmax(one_hot_data, axis=1)
-
-    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax'})
+    # one_hot_data=np.array(df[['omin','omax']].values.tolist())
+    # df['o_snr']=np.argmax(one_hot_data, axis=1)
+    df['future'] = df["Close"].shift(-FUTURE_PERIOD_PREDICT)
+    df['fut1'] = df["Close"].shift(3)
+    df["imbalance"]=(df["Close"]-df["fut1"])*10000
+    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
 
     FUTURE_PERIOD_PREDICT = 2
-    SEQ_LEN = 8
+    SEQ_LEN = 5
 
 
     df = df.loc[~df.index.duplicated(keep = 'first')]
@@ -231,8 +239,8 @@ def train_data():
 
     df['ao'] = ao(df['Close'], 5, 34)
 
-    df['MA_20'] = df['Close'].rolling(window = 20).mean() #moving average 20
-    df['MA_50'] = df['Close'].rolling(window = 50).mean() #moving average 50
+    # df['MA_20'] = df['Close'].rolling(window = 20).mean() #moving average 20
+    # df['MA_50'] = df['Close'].rolling(window = 50).mean() #moving average 50
 
     df['MA_8'] = df['Close'].rolling(window = 8).mean() #moving average 20
     df['MA_21'] = df['Close'].rolling(window = 21).mean() #moving average 50
@@ -351,7 +359,7 @@ def train_data():
     
     tensorboard = TensorBoard(log_dir="logs/{}".format(NAME))
     
-    filepath = 'LSTM-best'
+    filepath = 'best5withdate'
     checkpoint_filepath = "models/{}.model".format(filepath) # unique file name that will include the epoch and the validation acc for that epoch
     checkpoint = tf.keras.callbacks.ModelCheckpoint(checkpoint_filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max') # saves only the best ones
     

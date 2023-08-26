@@ -50,7 +50,11 @@ except Exception as e:
 def preprocess_prediciton():
     df = get_data()
     
-   
+    df['year'] = pd.DatetimeIndex(df['Date']).year
+    df['month'] = pd.DatetimeIndex(df['Date']).month
+    df['day'] = pd.DatetimeIndex(df['Date']).day
+    df['hour'] = pd.DatetimeIndex(df['Date']).hour
+    df['minute'] = pd.DatetimeIndex(df['Date']).minute
 
     # df.columns=['Open', 'Close', 'Low', 'High', 'volume', 'close_GBPUSD',
     #    'volume_GBPUSD', 'close_EURJPY', 'volume_EURJPY', 'close_AUDUSD',
@@ -106,7 +110,8 @@ def preprocess_prediciton():
         return df
     df=finding_candles_patterns(df)
     df[["Body","Pullback","Candle_Ratio"]] = df.apply(lambda x: bionic_pullback(x), axis=1, result_type="expand")
-    df=df[['Open', 'High', 'Low', 'Close','Body', 'Pullback', 'Candle_Ratio']]
+    df=df[['Open', 'High', 'Low', 'Close','Body', 'Pullback', 'Candle_Ratio','year', 'month',
+       'day', 'hour', 'minute']]
     
     
     from scipy.signal import argrelextrema
@@ -168,14 +173,16 @@ def preprocess_prediciton():
     one_hot_data=np.array(df[['jmin','jmax']].values.tolist())
     df['j_snr']=np.argmax(one_hot_data, axis=1)
 
-    one_hot_data=np.array(df[['omin','omax']].values.tolist())
-    df['o_snr']=np.argmax(one_hot_data, axis=1)
+    # one_hot_data=np.array(df[['omin','omax']].values.tolist())
+    # df['o_snr']=np.argmax(one_hot_data, axis=1)
 
-    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax'})
+    df['fut1'] = df["Close"].shift(3)
+    df["imbalance"]=(df["Close"]-df["fut1"])*10000
+    df = df.drop(columns = {'min','max','mmin','mmax','jmin','jmax','omin','omax','fut1'})
 
     df = df.loc[~df.index.duplicated(keep = 'first')]
 
-    SEQ_LEN = 8
+    SEQ_LEN = 5
     
     def sma(price, period):
       sma = price.rolling(period).mean()
@@ -191,8 +198,8 @@ def preprocess_prediciton():
 
     df['ao'] = ao(df['Close'], 5, 34)
 
-    df['MA_20'] = df['Close'].rolling(window = 20).mean() #moving average 20
-    df['MA_50'] = df['Close'].rolling(window = 50).mean() #moving average 50
+    # df['MA_20'] = df['Close'].rolling(window = 20).mean() #moving average 20
+    # df['MA_50'] = df['Close'].rolling(window = 50).mean() #moving average 50
 
     df['MA_8'] = df['Close'].rolling(window = 8).mean() #moving average 8
     df['MA_21'] = df['Close'].rolling(window = 21).mean() #moving average 21
@@ -271,7 +278,7 @@ else:
     ratio = sys.argv[1]
     martingale = sys.argv[3]
     
-SEQ_LEN = 8  # how long of a preceeding sequence to collect for RNN, if you modify here, remember to modify in the other files too
+SEQ_LEN = 5  # how long of a preceeding sequence to collect for RNN, if you modify here, remember to modify in the other files too
 FUTURE_PERIOD_PREDICT = 2  # how far into the future are we trying to predict , if you modify here, remember to modify in the other files too
 
 
