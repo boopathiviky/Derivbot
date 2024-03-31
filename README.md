@@ -17,6 +17,7 @@ git clone https://github.com/boopathiviky/Derivbot.git
 
 
 2. Install dependencies:
+cd derivebot
 pip install -r requirements.txt
 
 
