@@ -13,7 +13,7 @@ Derivbot is a project aimed at predicting binary options trading outcomes using 
 
 1. Clone the repository:
 
-git clone 
+git clone https://github.com/boopathiviky/Derivbot.git
 
 
 2. Install dependencies:
